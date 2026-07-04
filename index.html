@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Reativação de Clientes — WhatsApp</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#1c2b24;
+    --ink-soft:#4b5c53;
+    --paper:#f6f5ef;
+    --card:#ffffff;
+    --line:#dcd9cc;
+    --mint:#e6f3ea;
+    --mint-line:#bcdcc7;
+    --green:#1f6f54;
+    --green-dark:#144a37;
+    --whats:#25d366;
+    --whats-dark:#128c4c;
+    --amber:#fff4dd;
+    --amber-line:#e9c987;
+    --amber-ink:#8a5a10;
+    --red:#fde9e9;
+    --red-line:#eab4b4;
+    --red-ink:#9b2c2c;
+    --radius:10px;
+    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    padding:28px 22px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+  header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:20px;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;}
+  .brand .rx{
+    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    font-size:34px;
+    font-weight:700;
+    color:var(--green-dark);
+    line-height:1;
+  }
+  .brand h1{
+    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    font-size:22px;
+    margin:0;
+    letter-spacing:0.2px;
+  }
+  .brand p{margin:2px 0 0;font-size:12.5px;color:var(--ink-soft);letter-spacing:0.5px;text-transform:uppercase;}
+  .stats{display:flex;gap:10px;flex-wrap:wrap;}
+  .stat{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:8px 14px;
+    min-width:92px;
+    text-align:center;
+  }
+  .stat b{display:block;font-size:20px;font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;}
+  .stat span{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.4px;}
+  .stat.ok b{color:var(--green-dark);}
+  .stat.warn b{color:var(--amber-ink);}
+  .stat.bad b{color:var(--red-ink);}
+
+  .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 20px;
+    margin-bottom:20px;
+  }
+  .panel h2{
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    margin:0 0 12px;
+    color:var(--green-dark);
+    display:flex;align-items:center;gap:8px;
+  }
+  .panel h2::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;}
+
+  textarea{
+    width:100%;
+    min-height:120px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-size:12.5px;
+    resize:vertical;
+    background:#fcfcf9;
+    color:var(--ink);
+  }
+  textarea:focus{outline:2px solid var(--mint-line);}
+
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;}
+  .col{flex:1;min-width:260px;}
+  label.field-label{
+    display:block;font-size:11.5px;color:var(--ink-soft);text-transform:uppercase;
+    letter-spacing:0.4px;margin-bottom:6px;
+  }
+  input[type=text], select{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+    font-size:13px;font-family:"Helvetica Neue",Arial,sans-serif;background:#fcfcf9;color:var(--ink);
+  }
+  .tpl-hint{font-size:11px;color:var(--ink-soft);margin-top:6px;}
+  code.tag{
+    background:var(--mint);border:1px solid var(--mint-line);border-radius:4px;
+    padding:1px 5px;font-size:11px;color:var(--green-dark);font-family:ui-monospace,monospace;
+  }
+
+  .btnbar{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  button{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:13px;
+    border-radius:8px;
+    padding:9px 16px;
+    cursor:pointer;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:#fff;
+    transition:opacity .15s ease;
+  }
+  button:hover{opacity:.85;}
+  button.secondary, label.secondary{background:transparent;color:var(--ink);border-color:var(--line);}
+  button.secondary:hover, label.secondary:hover{background:var(--mint);border-color:var(--mint-line);}
+  button:disabled{opacity:.35;cursor:not-allowed;}
+  label.secondary{display:inline-flex;font-size:13px;cursor:pointer;}
+
+  .table-toolbar{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    margin-bottom:12px;flex-wrap:wrap;
+  }
+  .search{position:relative;flex:1;max-width:280px;}
+  .search input{padding-left:30px;}
+  .search::before{
+    content:"⌕";position:absolute;left:10px;top:50%;transform:translateY(-50%);
+    color:var(--ink-soft);font-size:14px;
+  }
+  .filters{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{
+    border:1px solid var(--line);background:#fff;border-radius:20px;padding:5px 12px;
+    font-size:11.5px;cursor:pointer;color:var(--ink-soft);
+  }
+  .chip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{
+    text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:0.4px;
+    color:var(--ink-soft);border-bottom:1.5px solid var(--ink);padding:8px 8px;white-space:nowrap;
+  }
+  tbody td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tbody tr:hover{background:#fbfbf7;}
+  .name-cell b{display:block;font-size:13px;}
+  .name-cell span{font-size:11px;color:var(--ink-soft);}
+  .badge{
+    display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;
+    border:1px solid transparent;font-weight:600;white-space:nowrap;
+  }
+  .badge.ok{background:var(--mint);border-color:var(--mint-line);color:var(--green-dark);}
+  .badge.warn{background:var(--amber);border-color:var(--amber-line);color:var(--amber-ink);}
+  .badge.bad{background:var(--red);border-color:var(--red-line);color:var(--red-ink);}
+  .fix-input{
+    width:118px;border:1px solid var(--amber-line);border-radius:6px;padding:5px 6px;
+    font-size:11.5px;font-family:ui-monospace,monospace;background:#fffdf6;
+  }
+  .wa-btn{
+    display:inline-flex;align-items:center;gap:5px;background:var(--whats);color:#fff;
+    border:none;border-radius:20px;padding:6px 12px;font-size:12px;font-weight:600;
+    text-decoration:none;cursor:pointer;
+  }
+  .wa-btn:hover{background:var(--whats-dark);}
+  .wa-btn[disabled]{background:#c9c9c2;cursor:not-allowed;pointer-events:none;}
+  .msg-preview{
+    max-width:230px;font-size:11.5px;color:var(--ink-soft);
+    display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  select.status-select{
+    font-size:11.5px;padding:4px 6px;border-radius:6px;border:1px solid var(--line);
+    background:#fff;min-width:130px;
+  }
+  select.status-select.st-nao-enviado{background:#fff;}
+  select.status-select.st-enviado{background:#e6f0fa;border-color:#b8d3ef;}
+  select.status-select.st-respondeu{background:var(--mint);border-color:var(--mint-line);}
+  select.status-select.st-voltou{background:#dff2df;border-color:#a9d8a9;}
+  select.status-select.st-nao-respondeu{background:var(--red);border-color:var(--red-line);}
+
+  .empty{padding:40px 10px;text-align:center;color:var(--ink-soft);font-size:13px;}
+  footer{margin-top:26px;font-size:11px;color:var(--ink-soft);text-align:center;}
+
+  @media (max-width:720px){
+    table thead{display:none;}
+    tbody tr{display:block;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:6px 4px;}
+    tbody td{display:flex;justify-content:space-between;gap:10px;border-bottom:none;padding:6px 8px;}
+    tbody td::before{content:attr(data-label);font-size:10px;text-transform:uppercase;color:var(--ink-soft);width:110px;flex-shrink:0;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <span class="rx">℞</span>
+      <div>
+        <h1>Reativação de clientes</h1>
+        <p>Padronizador de telefone + disparo no WhatsApp</p>
+      </div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div class="panel">
+    <h2>1. Colar os dados</h2>
+    <p class="tpl-hint" style="margin-top:-4px;margin-bottom:10px;">
+      Cole aqui as colunas <b>Nome</b>, <b>Telefone</b> e <b>Dias sem comprar</b> — separadas por TAB (copiar direto do Excel) ou vírgula. Uma linha por cliente.
+    </p>
+    <textarea id="rawInput" placeholder="Gii Melo&#9;(19) 97517-2840&#9;183
+Néia&#9;11 98902-4152&#9;182
+Ana de Lima&#9;19989395228&#9;182"></textarea>
+    <div class="btnbar">
+      <button id="processBtn">Processar lista</button>
+      <label class="secondary" id="importBtn" style="display:inline-flex;align-items:center;gap:6px;">
+        Importar planilha (.xlsx / .csv)
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+      </label>
+      <button class="secondary" id="loadSample">Carregar exemplo</button>
+      <button class="secondary" id="clearAll">Limpar tudo</button>
+    </div>
+    <p class="tpl-hint" id="importStatus" style="margin-top:8px;"></p>
+  </div>
+
+  <div class="panel">
+    <h2>2. Mensagem padrão</h2>
+    <div class="row">
+      <div class="col">
+        <label class="field-label">Texto da mensagem</label>
+        <textarea id="tplInput" style="min-height:70px;">Oi {nome}! Aqui é da farmácia. Notamos que você não faz uma compra há {dias} dias e ficamos com saudade! Temos ofertas especiais esperando por você. Posso te ajudar com algo hoje?</textarea>
+        <p class="tpl-hint">Use <code class="tag">{nome}</code> e <code class="tag">{dias}</code> — são substituídos automaticamente para cada cliente.</p>
+      </div>
+      <div class="col" style="max-width:200px;">
+        <label class="field-label">DDD padrão (se faltar)</label>
+        <input type="text" id="defaultDDD" placeholder="ex: 11" maxlength="2">
+        <p class="tpl-hint">Usado só como sugestão nos números incompletos — você confirma antes de enviar.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>3. Lista de contatos</h2>
+    <div class="table-toolbar">
+      <div class="search">
+        <input type="text" id="searchBox" placeholder="Buscar por nome...">
+      </div>
+      <div class="filters" id="filters">
+        <span class="chip active" data-filter="all">Todos</span>
+        <span class="chip" data-filter="ok">Prontos</span>
+        <span class="chip" data-filter="warn">DDD ausente</span>
+        <span class="chip" data-filter="bad">Inválidos</span>
+      </div>
+      <button class="secondary" id="exportBtn">Exportar CSV</button>
+    </div>
+
+    <div style="overflow-x:auto;">
+    <table id="resultsTable">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Dias</th>
+          <th>Telefone padronizado</th>
+          <th>Status</th>
+          <th>Mensagem</th>
+          <th>WhatsApp</th>
+          <th>Contato</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+    </div>
+    <div class="empty" id="emptyState">Cole a lista acima e clique em "Processar lista" para começar.</div>
+  </div>
+
+  <footer>Os dados ficam apenas no seu navegador (localStorage) — nada é enviado a nenhum servidor.</footer>
+</div>
+
+<script>
+const STORAGE_KEY = 'reativacao_whatsapp_v1';
+let records = [];
+let filterMode = 'all';
+let searchTerm = '';
+
+function onlyDigits(s){ return (s || '').replace(/\D/g,''); }
+
+function normalizePhone(raw){
+  let digits = onlyDigits(raw);
+  if (digits.length === 13 && digits.startsWith('55')) digits = digits.slice(2);
+  if (digits.length === 12 && digits.startsWith('55')) digits = digits.slice(2);
+  const n = digits.length;
+
+  if (n === 11){
+    const ddd = digits.slice(0,2), num = digits.slice(2);
+    if (num[0] === '9') return {status:'ok', ddd, num, e164:'55'+ddd+num};
+    return {status:'bad', ddd, num, e164:null};
+  }
+  if (n === 10){
+    const ddd = digits.slice(0,2);
+    const num = '9' + digits.slice(2);
+    return {status:'ok', ddd, num, e164:'55'+ddd+num};
+  }
+  if (n === 9){
+    return {status:'warn', ddd:null, num: digits, e164:null};
+  }
+  if (n === 8){
+    return {status:'warn', ddd:null, num: '9'+digits, e164:null};
+  }
+  return {status:'bad', ddd:null, num: digits, e164:null};
+}
+
+function titleCase(str){
+  return (str||'').trim().split(/\s+/).map(w=>{
+    const lw = w.toLowerCase();
+    if (['de','da','do','das','dos','e'].includes(lw)) return lw;
+    if (w.startsWith('(')) return w.toUpperCase();
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  }).join(' ');
+}
+
+function buildRecordsFromRaw(list){
+  const out = [];
+  list.forEach((item, idx)=>{
+    const nome = titleCase(item.nome || '');
+    const telRaw = (item.telRaw || '').trim();
+    let dias = item.dias;
+    if (typeof dias !== 'number') dias = parseInt(onlyDigits(String(dias || '0'))) || 0;
+    if (!nome && !telRaw) return;
+    const phoneInfo = normalizePhone(telRaw);
+    out.push({
+      id: 'r'+idx+'_'+Date.now()+Math.random().toString(36).slice(2,6),
+      nome, telRaw, dias,
+      status_contato: 'Não enviado',
+      ...phoneInfo
+    });
+  });
+  return out;
+}
+
+function parseInput(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const list = lines.map(line=>{
+    const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+    return { nome: (parts[0]||'').trim(), telRaw: (parts[1]||'').trim(), dias: (parts[2]||'').trim() };
+  });
+  return buildRecordsFromRaw(list);
+}
+
+function normalizeHeader(s){
+  return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+}
+
+function extractFromWorkbook(workbook){
+  const combined = [];
+  let sheetsUsed = 0;
+  workbook.SheetNames.forEach(sheetName=>{
+    const ws = workbook.Sheets[sheetName];
+    const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:false});
+    let headerRowIdx = -1, colNome=-1, colTelefone=-1, colDias=-1;
+    for (let i=0;i<Math.min(aoa.length, 15);i++){
+      const row = aoa[i] || [];
+      row.forEach((cell, ci)=>{
+        if (typeof cell === 'string'){
+          const norm = normalizeHeader(cell);
+          if (norm.includes('nome')) colNome = ci;
+          if (norm.includes('telefone') || norm.includes('fone') || norm.includes('celular')) colTelefone = ci;
+          if (norm.includes('dias')) colDias = ci;
+        }
+      });
+      if (colNome>=0 && colTelefone>=0){ headerRowIdx = i; break; }
+    }
+    if (headerRowIdx === -1 || colNome < 0 || colTelefone < 0) return;
+    sheetsUsed++;
+    for (let i=headerRowIdx+1;i<aoa.length;i++){
+      const row = aoa[i];
+      if (!row) continue;
+      const nome = row[colNome];
+      const tel = row[colTelefone];
+      const dias = colDias>=0 ? row[colDias] : null;
+      if ((nome==null || String(nome).trim()==='') && (tel==null || String(tel).trim()==='')) continue;
+      combined.push({
+        nome: nome!=null ? String(nome).trim() : '',
+        telRaw: tel!=null ? String(tel).trim() : '',
+        dias: dias!=null ? String(dias).trim() : '0'
+      });
+    }
+  });
+  return { list: combined, sheetsUsed };
+}
+
+function buildMessage(rec){
+  const tpl = document.getElementById('tplInput').value || '';
+  return tpl.replace(/\{nome\}/g, rec.nome).replace(/\{dias\}/g, rec.dias);
+}
+
+function waLink(rec){
+  if (rec.status !== 'ok') return null;
+  const msg = encodeURIComponent(buildMessage(rec));
+  return `https://wa.me/${rec.e164}?text=${msg}`;
+}
+
+function statusBadge(s){
+  if (s==='ok') return '<span class="badge ok">Pronto</span>';
+  if (s==='warn') return '<span class="badge warn">DDD ausente</span>';
+  return '<span class="badge bad">Inválido</span>';
+}
+
+function statusClass(v){
+  return {
+    'Não enviado':'st-nao-enviado','Enviado':'st-enviado','Respondeu':'st-respondeu',
+    'Voltou a comprar':'st-voltou','Não respondeu':'st-nao-respondeu'
+  }[v] || 'st-nao-enviado';
+}
+
+function renderStats(){
+  const total = records.length;
+  const ok = records.filter(r=>r.status==='ok').length;
+  const warn = records.filter(r=>r.status==='warn').length;
+  const bad = records.filter(r=>r.status==='bad').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><b>${total}</b><span>Total</span></div>
+    <div class="stat ok"><b>${ok}</b><span>Prontos</span></div>
+    <div class="stat warn"><b>${warn}</b><span>DDD ausente</span></div>
+    <div class="stat bad"><b>${bad}</b><span>Inválidos</span></div>
+  `;
+}
+
+function applyDefaultDDD(rec){
+  const ddd = onlyDigits(document.getElementById('defaultDDD').value).slice(0,2);
+  if (rec.status === 'warn' && ddd.length === 2){
+    return ddd + rec.num;
+  }
+  return rec.num;
+}
+
+function renderTable(){
+  const tbody = document.getElementById('resultsBody');
+  const empty = document.getElementById('emptyState');
+  let filtered = records.filter(r=>{
+    if (filterMode !== 'all' && r.status !== filterMode) return false;
+    if (searchTerm && !r.nome.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    return true;
+  });
+
+  if (records.length === 0){
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = 'Cole a lista acima e clique em "Processar lista" para começar.';
+    return;
+  }
+  if (filtered.length === 0){
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = 'Nenhum contato encontrado com esse filtro.';
+    return;
+  }
+  empty.style.display = 'none';
+
+  filtered.sort((a,b)=> b.dias - a.dias);
+
+  tbody.innerHTML = filtered.map(rec=>{
+    const msg = buildMessage(rec);
+    const link = waLink(rec);
+    let telCell;
+    if (rec.status === 'ok'){
+      telCell = `+55 (${rec.ddd}) ${rec.num.slice(0,1)}${rec.num.slice(1,5)}-${rec.num.slice(5)}`;
+    } else if (rec.status === 'warn'){
+      telCell = `<input type="text" class="fix-input" data-id="${rec.id}" placeholder="Adicionar DDD" value="${rec.ddd||''}" maxlength="2">`;
+    } else {
+      telCell = `<span style="color:var(--red-ink);">${rec.telRaw || '—'}</span>`;
+    }
+    const waBtn = link
+      ? `<a class="wa-btn" href="${link}" target="_blank" rel="noopener">Abrir ↗</a>`
+      : `<button class="wa-btn" disabled>Abrir ↗</button>`;
+    return `
+      <tr data-id="${rec.id}">
+        <td data-label="Cliente"><div class="name-cell"><b>${rec.nome || '(sem nome)'}</b><span>${rec.telRaw||''}</span></div></td>
+        <td data-label="Dias">${rec.dias}</td>
+        <td data-label="Telefone">${telCell}</td>
+        <td data-label="Status">${statusBadge(rec.status)}</td>
+        <td data-label="Mensagem"><span class="msg-preview" title="${msg.replace(/"/g,'&quot;')}">${msg}</span></td>
+        <td data-label="WhatsApp">${waBtn}</td>
+        <td data-label="Contato">
+          <select class="status-select ${statusClass(rec.status_contato||'Não enviado')}" data-id="${rec.id}">
+            ${['Não enviado','Enviado','Respondeu','Voltou a comprar','Não respondeu'].map(s=>
+              `<option value="${s}" ${((rec.status_contato||'Não enviado')===s)?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </td>
+      </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('.fix-input').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      const id = e.target.dataset.id;
+      const rec = records.find(r=>r.id===id);
+      const ddd = onlyDigits(e.target.value).slice(0,2);
+      if (ddd.length === 2){
+        rec.ddd = ddd;
+        rec.status = 'ok';
+        rec.e164 = '55'+ddd+rec.num;
+      }
+      persist();
+      renderStats();
+      renderTable();
+    });
+  });
+
+  tbody.querySelectorAll('.status-select').forEach(sel=>{
+    sel.addEventListener('change', e=>{
+      const id = e.target.dataset.id;
+      const rec = records.find(r=>r.id===id);
+      rec.status_contato = e.target.value;
+      persist();
+      renderTable();
+    });
+  });
+}
+
+function persist(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      records, tpl: document.getElementById('tplInput').value
+    }));
+  }catch(e){}
+}
+
+function restore(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (saved && saved.records){
+      records = saved.records;
+      if (saved.tpl) document.getElementById('tplInput').value = saved.tpl;
+    }
+  }catch(e){}
+}
+
+document.getElementById('processBtn').addEventListener('click', ()=>{
+  const text = document.getElementById('rawInput').value;
+  const parsed = parseInput(text);
+  if (parsed.length === 0){ return; }
+  records = parsed;
+  persist();
+  renderStats();
+  renderTable();
+});
+
+document.getElementById('fileInput').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  const statusEl = document.getElementById('importStatus');
+  if (!file) return;
+  statusEl.textContent = 'Lendo arquivo...';
+  const reader = new FileReader();
+  reader.onload = evt=>{
+    try{
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, {type:'array'});
+      const { list, sheetsUsed } = extractFromWorkbook(workbook);
+      if (list.length === 0){
+        statusEl.textContent = 'Não encontrei colunas de Nome e Telefone nesse arquivo. Verifique se os cabeçalhos têm esses nomes.';
+        statusEl.style.color = 'var(--red-ink)';
+        return;
+      }
+      records = buildRecordsFromRaw(list);
+      persist();
+      renderStats();
+      renderTable();
+      statusEl.style.color = 'var(--green-dark)';
+      statusEl.textContent = `${records.length} contatos importados de ${sheetsUsed} aba(s) do arquivo "${file.name}".`;
+    }catch(err){
+      statusEl.style.color = 'var(--red-ink)';
+      statusEl.textContent = 'Não consegui ler esse arquivo. Confira se é um .xlsx, .xls ou .csv válido.';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+});
+
+document.getElementById('loadSample').addEventListener('click', ()=>{
+  document.getElementById('rawInput').value =
+`Gii Melo\t(19) 97517-2840\t183
+Néia\t11 98902-4152\t182
+Ana de Lima\t19989395228\t182
+Fabiana\t(11) 95436-5160\t182
+Carlinhos\t19 8481-0539\t178
+Higor Rafael\t14 1253-9999\t141`;
+});
+
+document.getElementById('clearAll').addEventListener('click', ()=>{
+  if (!confirm('Limpar todos os dados carregados?')) return;
+  records = [];
+  document.getElementById('rawInput').value = '';
+  localStorage.removeItem(STORAGE_KEY);
+  renderStats();
+  renderTable();
+});
+
+document.getElementById('tplInput').addEventListener('input', ()=>{
+  persist();
+  renderTable();
+});
+
+document.getElementById('defaultDDD').addEventListener('input', ()=>{
+  renderTable();
+});
+
+document.getElementById('searchBox').addEventListener('input', e=>{
+  searchTerm = e.target.value;
+  renderTable();
+});
+
+document.getElementById('filters').addEventListener('click', e=>{
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  filterMode = chip.dataset.filter;
+  renderTable();
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  if (records.length === 0) return;
+  const header = ['Nome','Dias sem comprar','Telefone original','Telefone padronizado','Status telefone','Link WhatsApp','Mensagem','Status contato'];
+  const lines = [header.join(';')];
+  records.forEach(rec=>{
+    const tel = rec.status==='ok' ? `+55${rec.ddd}${rec.num}` : rec.telRaw;
+    const statusMap = {ok:'OK', warn:'DDD ausente', bad:'Inválido'};
+    const link = waLink(rec) || '';
+    const msg = buildMessage(rec).replace(/;/g,',');
+    lines.push([
+      rec.nome, rec.dias, rec.telRaw, tel, statusMap[rec.status], link, msg, rec.status_contato||'Não enviado'
+    ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';'));
+  });
+  const blob = new Blob(['\uFEFF'+lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'clientes_whatsapp.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+restore();
+renderStats();
+renderTable();
+</script>
+</body>
+</html>
